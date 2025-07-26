@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 25, 2025 at 06:41 PM
+-- Generation Time: Jul 26, 2025 at 09:42 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -46,12 +46,23 @@ CREATE TABLE `candidates` (
   `party` varchar(100) DEFAULT NULL,
   `manifesto` text DEFAULT NULL,
   `position` varchar(100) NOT NULL,
-  `password` varchar(255) DEFAULT NULL,
   `approved` tinyint(1) DEFAULT 0,
   `national_id_path` varchar(255) DEFAULT NULL,
   `clearance_certificate_path` varchar(255) DEFAULT NULL,
   `academic_cert_path` varchar(255) DEFAULT NULL,
   `photo_path` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `election_period`
+--
+
+CREATE TABLE `election_period` (
+  `id` int(11) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -78,9 +89,9 @@ CREATE TABLE `voters` (
 
 CREATE TABLE `votes` (
   `vote_id` int(11) NOT NULL,
-  `voter_id` int(11) NOT NULL,
+  `voter_id` varchar(20) NOT NULL,
   `candidate_id` int(11) NOT NULL,
-  `timestamp` datetime DEFAULT current_timestamp()
+  `vote_timestamp` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -102,6 +113,12 @@ ALTER TABLE `candidates`
   ADD UNIQUE KEY `national_id` (`national_id`);
 
 --
+-- Indexes for table `election_period`
+--
+ALTER TABLE `election_period`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `voters`
 --
 ALTER TABLE `voters`
@@ -113,7 +130,7 @@ ALTER TABLE `voters`
 --
 ALTER TABLE `votes`
   ADD PRIMARY KEY (`vote_id`),
-  ADD KEY `voter_id` (`voter_id`),
+  ADD UNIQUE KEY `voter_id` (`voter_id`),
   ADD KEY `candidate_id` (`candidate_id`);
 
 --
@@ -131,6 +148,12 @@ ALTER TABLE `admins`
 --
 ALTER TABLE `candidates`
   MODIFY `candidate_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `election_period`
+--
+ALTER TABLE `election_period`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `voters`
@@ -152,8 +175,7 @@ ALTER TABLE `votes`
 -- Constraints for table `votes`
 --
 ALTER TABLE `votes`
-  ADD CONSTRAINT `votes_ibfk_1` FOREIGN KEY (`voter_id`) REFERENCES `voters` (`voter_id`),
-  ADD CONSTRAINT `votes_ibfk_2` FOREIGN KEY (`candidate_id`) REFERENCES `candidates` (`candidate_id`);
+  ADD CONSTRAINT `votes_ibfk_1` FOREIGN KEY (`candidate_id`) REFERENCES `candidates` (`candidate_id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
