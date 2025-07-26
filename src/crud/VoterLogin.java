@@ -1,81 +1,87 @@
 package crud;
 
 import db.Database;
-import util.PasswordUtil;
+import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import util.PasswordUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-public class VoterLogin {
+public class VoterLogin extends Application {
 
-    private VBox loginView;
+    @Override
+    public void start(Stage stage) {
+        Label title = new Label("🗳️ Voter Login");
+        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
 
-    public VoterLogin(Stage stage) {
-        loginView = new VBox(15);
-        loginView.setPadding(new Insets(20));
-        loginView.setAlignment(Pos.CENTER);
+        Label idLabel = new Label("National ID:");
+        TextField idField = new TextField();
+        idField.setPromptText("Enter your National ID");
 
-        Label title = new Label("Voter Login");
-
-        TextField nationalIdField = new TextField();
-        nationalIdField.setPromptText("National ID");
-
+        Label passwordLabel = new Label("Password:");
         PasswordField passwordField = new PasswordField();
-        passwordField.setPromptText("Password");
+        passwordField.setPromptText("Enter your password");
 
-        Button loginBtn = new Button("Login");
-        Label messageLabel = new Label();
+        Label message = new Label();
+        message.setStyle("-fx-text-fill: red;");
 
-        loginBtn.setOnAction(e -> {
-            String nationalId = nationalIdField.getText().trim();
+        Button loginButton = new Button("Login");
+        loginButton.setOnAction(e -> {
+            String nationalId = idField.getText().trim();
             String password = passwordField.getText().trim();
 
             if (nationalId.isEmpty() || password.isEmpty()) {
-                messageLabel.setText("Please fill in all fields.");
+                message.setText("Please fill in all fields.");
                 return;
             }
 
             try (Connection conn = Database.getConnection()) {
-                String query = "SELECT * FROM voters WHERE national_id = ?";
-                PreparedStatement stmt = conn.prepareStatement(query);
+                String sql = "SELECT * FROM voters WHERE national_id = ?";
+                PreparedStatement stmt = conn.prepareStatement(sql);
                 stmt.setString(1, nationalId);
                 ResultSet rs = stmt.executeQuery();
 
                 if (rs.next()) {
                     String storedHash = rs.getString("password");
+                    String fullName = rs.getString("full_name");
+
                     if (PasswordUtil.checkPassword(password, storedHash)) {
-                        messageLabel.setText("Login successful!");
-
-                        // Redirect to dashboard
-                        VoterDashboard dashboard = new VoterDashboard(stage,
-                                rs.getString("full_name"), rs.getString("national_id"));
-                        Scene dashboardScene = new Scene(dashboard.getView(), 600, 400);
-                        stage.setScene(dashboardScene);
-
+                        VoterDashboard dashboard = new VoterDashboard(fullName, nationalId);
+                        dashboard.show(stage);
                     } else {
-                        messageLabel.setText("Incorrect password.");
+                        message.setText("Invalid password.");
                     }
                 } else {
-                    messageLabel.setText("Voter not found.");
+                    message.setText("Voter not found.");
                 }
-
             } catch (Exception ex) {
                 ex.printStackTrace();
-                messageLabel.setText("Database error.");
+                message.setText("Login failed due to an error.");
             }
         });
 
-        loginView.getChildren().addAll(title, nationalIdField, passwordField, loginBtn, messageLabel);
+        VBox form = new VBox(10, title, idLabel, idField, passwordLabel, passwordField, loginButton, message);
+        form.setPadding(new Insets(30));
+        form.setAlignment(Pos.CENTER);
+
+        Scene scene = new Scene(form, 500, 400);
+        stage.setTitle("Voter Login");
+        stage.setScene(scene);
+        stage.show();
     }
 
-    public VBox getView() {
-        return loginView;
+    public static void show(Stage stage) {
+        try {
+            new VoterLogin().start(stage);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
