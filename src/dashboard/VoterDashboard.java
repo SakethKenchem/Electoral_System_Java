@@ -19,7 +19,7 @@ public class VoterDashboard {
 
     private String fullName;
 
-    public VoterDashboard(String fullName, String nationalId) {
+    public VoterDashboard(String fullName) {
         this.fullName = fullName;
     }
 

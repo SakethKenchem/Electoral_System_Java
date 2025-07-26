@@ -1,23 +1,23 @@
 package crud;
 
-import crud.AdminCRUD;
-import dashboard.AdminDashboard;
+import db.Database;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import util.PasswordUtil;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class AdminLogin {
 
-    public void showLogin(Stage stage) {
-        VBox root = new VBox(10);
-        root.setPadding(new Insets(20));
-        root.setAlignment(Pos.CENTER);
-
-        Label heading = new Label("Admin Login");
-        heading.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+    public static void show(Stage stage) {
+        Label title = new Label("🔒 Admin Login");
+        title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold;");
 
         TextField usernameField = new TextField();
         usernameField.setPromptText("Username");
@@ -25,23 +25,47 @@ public class AdminLogin {
         PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Password");
 
-        Button loginBtn = new Button("Login");
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red;");
 
-        Label statusLabel = new Label();
+        Button loginButton = new Button("Login");
+        loginButton.setOnAction(e -> {
+            String username = usernameField.getText().trim();
+            String password = passwordField.getText().trim();
 
-        loginBtn.setOnAction(e -> {
-            String username = usernameField.getText();
-            String password = passwordField.getText();
+            if (username.isEmpty() || password.isEmpty()) {
+                errorLabel.setText("Please enter both fields.");
+                return;
+            }
 
-            if (AdminCRUD.validateLogin(username, password)) {
-                new AdminDashboard().showDashboard(stage);
-            } else {
-                statusLabel.setText("Invalid credentials");
+            try (Connection conn = Database.getConnection()) {
+                String query = "SELECT * FROM admins WHERE username = ?";
+                PreparedStatement stmt = conn.prepareStatement(query);
+                stmt.setString(1, username);
+                ResultSet rs = stmt.executeQuery();
+
+                if (rs.next()) {
+                    String storedHash = rs.getString("password");
+                    if (PasswordUtil.checkPassword(password, storedHash)) {
+                        // Login success — redirect to admin dashboard
+                        new dashboard.AdminDashboard(username).show(stage);
+                    } else {
+                        errorLabel.setText("Invalid password.");
+                    }
+                } else {
+                    errorLabel.setText("Admin not found.");
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                errorLabel.setText("⚠ Database error.");
             }
         });
 
-        root.getChildren().addAll(heading, usernameField, passwordField, loginBtn, statusLabel);
-        Scene scene = new Scene(root, 300, 250);
+        VBox root = new VBox(10, title, usernameField, passwordField, loginButton, errorLabel);
+        root.setPadding(new Insets(30));
+        root.setAlignment(Pos.CENTER);
+
+        Scene scene = new Scene(root, 400, 300);
         stage.setTitle("Admin Login");
         stage.setScene(scene);
         stage.show();
